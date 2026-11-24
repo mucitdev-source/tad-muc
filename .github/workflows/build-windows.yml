@@ -134,6 +134,12 @@ jobs:
           "Non-Tad child processes of Tad: $(@($children | ForEach-Object ProcessName) -join ', ')"
           "Marker file present           : $(Test-Path $marker)"
 
+          $logDir = Join-Path $env:APPDATA "Tad\logs"
+          if (Test-Path $logDir) {
+            Get-ChildItem $logDir -File | ForEach-Object { "----- $($_.Name) (last 60 lines)"; Get-Content $_.FullName -Tail 60 }
+            Copy-Item $logDir -Destination runtime-test/logs -Recurse -Force -ErrorAction SilentlyContinue
+          } else { "no Tad log directory at $logDir" }
+
           if ($tadIds.Count -eq 0) { throw "Tad was not running (crashed or failed to start)" }
           if (-not ($titles -match "payload-xss")) { throw "INCONCLUSIVE: no Tad window shows payload-xss.csv, so the file was not rendered" }
           if (Test-Path $marker) { throw "PAYLOAD EXECUTED: marker file was written" }
