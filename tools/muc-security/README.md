@@ -9,6 +9,7 @@ Jalankan seluruh pengujian ini setiap kali build baru akan didistribusikan, term
 | `make-tad-fixtures.js` | Membuat `fixtures/legit-pivot.tad` dan `fixtures/malicious-aggmap.tad` dengan path absolut sesuai komputer penguji. |
 | `fixtures/payload-xss.csv` | CSV berisi payload XSS/RCE (`calc`) dan URL berskema berbahaya (`smb://`, `file://`). |
 | `fixtures/sample.csv` | Data contoh bersih untuk uji pivot dan filter. |
+| `check-fuses.js` | Memeriksa status Electron Fuses pada `Tad.exe` hasil build (RunAsNode, NODE_OPTIONS, `--inspect`, OnlyLoadAppFromAsar). |
 
 > **Perhatian:** `payload-xss.csv` dan `malicious-aggmap.tad` adalah materi uji serangan. Pada Tad versi **upstream**, membuka `payload-xss.csv` akan langsung membuka Kalkulator Windows (bukti eksekusi kode). Simpan berkas ini hanya di repositori ini dan jangan diedarkan ke pengguna.
 
@@ -38,5 +39,6 @@ Hasil yang diharapkan: semua baris `PASS` dan `RESULT: PASS` (exit code 0).
 | 6 | Buka sebuah berkas `.duckdb` dan `.parquet` | Tabel tampil. Berkas `.duckdb` tidak berubah (cek `Get-FileHash` sebelum dan sesudah). |
 | 7 | Export data terfilter ke CSV melalui tombol *Browse* | Berkas tersimpan tanpa dialog konfirmasi tambahan. |
 | 8 | Export dengan mengetik path secara manual | Muncul dialog konfirmasi bawaan Windows sebelum berkas ditulis. |
+| 8a | `node tools\muc-security\check-fuses.js "C:\Program Files\Tad\Tad.exe"` | Semua baris `PASS`, `RESULT: PASS`. |
 | 9 | PowerShell: `$env:ELECTRON_RUN_AS_NODE=1; & "C:\Program Files\Tad\Tad.exe" -e "require('fs').writeFileSync('C:/Users/Public/x.txt','x')"` | `C:\Users\Public\x.txt` **tidak** terbentuk (fuse RunAsNode nonaktif). Tutup jendela Tad yang mungkin terbuka, lalu jalankan `Remove-Item Env:ELECTRON_RUN_AS_NODE`. |
 | 10 | Pantau koneksi Tad.exe (Resource Monitor → Network, atau log Windows Defender Firewall) selama langkah 1–8 | Tidak ada koneksi keluar dari Tad.exe. |

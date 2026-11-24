@@ -121,14 +121,18 @@ git clone <repositori-internal> tad
 cd tad
 git checkout muc-hardening
 npm install
-npx lerna bootstrap --hoist --force-local --ignore-prepublish --ignore tadweb-app --ignore tadweb-server --ignore reltab-sqlite --ignore reltab-bigquery --ignore reltab-snowflake --ignore reltab-aws-athena
+npx lerna bootstrap --no-ci --hoist --force-local --ignore-prepublish --ignore tadweb-app --ignore tadweb-server --ignore reltab-sqlite --ignore reltab-bigquery --ignore reltab-snowflake --ignore reltab-aws-athena
 for %p in (reltab aggtree reltab-duckdb reltab-fs tadviewer) do (cd packages\%p && npm run build && cd ..\..)
 cd packages\tad-app
 npm run build-prod
 npm run dist
 ```
 
-Hasil installer berada di `packages\tad-app\release\`. Sebelum distribusi:
+Hasil installer berada di `packages\tad-app\release\`.
+
+**Build otomatis (GitHub Actions).** Workflow `.github/workflows/build-windows.yml` menjalankan langkah yang sama di runner Windows setiap kali ada push ke branch `muc-hardening` (atau melalui *Actions → Build Tad MUC (Windows) → Run workflow*). Selain build, workflow juga menjalankan uji regresi validator, memeriksa Electron Fuses (`tools/muc-security/check-fuses.js`), memastikan `app-update.yml` tidak ikut terpaket dan modul DuckDB tersedia, lalu menerbitkan installer beserta `SHA256SUMS.txt` sebagai artifact (disimpan 30 hari). Action pihak ketiga dikunci ke commit SHA, workflow hanya memiliki izin baca, dan tidak memakai secret.
+
+Sebelum distribusi:
 
 1. Catat hash SHA-256 installer (`Get-FileHash`) pada formulir perubahan.
 2. Tanda tangani `Tad.exe` dan installer dengan sertifikat code signing perusahaan bila tersedia.
@@ -156,6 +160,7 @@ Ikuti `tools/muc-security/README.md`. Ringkasnya:
 - [ ] Buka `legit-pivot.tad` → pivot dan filter benar; buka `malicious-aggmap.tad` → ditolak, tidak ada berkas tertulis
 - [ ] `.duckdb` dan `.parquet` terbuka; berkas `.duckdb` tidak berubah
 - [ ] Export melalui *Browse* berhasil; export path manual meminta konfirmasi
+- [ ] `node tools/muc-security/check-fuses.js "C:\Program Files\Tad\Tad.exe"` → `RESULT: PASS`
 - [ ] `ELECTRON_RUN_AS_NODE` tidak menjalankan kode
 - [ ] Tidak ada koneksi keluar dari `Tad.exe`
 

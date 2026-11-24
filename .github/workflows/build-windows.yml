@@ -1,0 +1,104 @@
+# MUC: build and verify the hardened Tad installer for Windows.
+#
+# Runs on every push to muc-hardening and on demand (Actions -> Run workflow).
+# The installer and its SHA-256 are published as a workflow artifact; nothing
+# is uploaded to GitHub Releases and no secrets are used.
+
+name: Build Tad MUC (Windows)
+
+on:
+  push:
+    branches: [muc-hardening]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      # no code-signing certificate is configured yet
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      # third-party actions are pinned to full commit SHAs
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install root tooling
+        run: npm ci --no-audit --no-fund
+
+      - name: Bootstrap packages used by the desktop app
+        run: >
+          npx lerna bootstrap --no-ci --hoist --force-local --ignore-prepublish
+          --ignore tadweb-app --ignore tadweb-server --ignore reltab-sqlite
+          --ignore reltab-bigquery --ignore reltab-snowflake --ignore reltab-aws-athena
+
+      - name: Build libraries
+        run: |
+          foreach ($p in "reltab", "aggtree", "reltab-duckdb", "reltab-fs", "tadviewer") {
+            Write-Host "=== building $p"
+            Push-Location "packages/$p"
+            npm run build
+            if ($LASTEXITCODE -ne 0) { throw "build failed: $p" }
+            Pop-Location
+          }
+
+      - name: Security regression test (query validator)
+        run: node tools/muc-security/validator-test.js
+
+      - name: Build and package the app
+        working-directory: packages/tad-app
+        run: |
+          npm run build-prod
+          if ($LASTEXITCODE -ne 0) { throw "build-prod failed" }
+          npm run dist
+          if ($LASTEXITCODE -ne 0) { throw "electron-builder failed" }
+
+      - name: Verify Electron fuses and packaging
+        run: |
+          node tools/muc-security/check-fuses.js packages/tad-app/release/win-unpacked/Tad.exe
+          if ($LASTEXITCODE -ne 0) { throw "fuse check failed" }
+          $res = "packages/tad-app/release/win-unpacked/resources"
+          if (Test-Path "$res/app-update.yml") { throw "app-update.yml must not be packaged" }
+          if (-not (Test-Path "$res/app.asar.unpacked/node_modules/duckdb/lib/binding/duckdb.node")) { throw "DuckDB native module missing" }
+
+      - name: Compute SHA-256
+        working-directory: packages/tad-app/release
+        run: |
+          $lines = Get-ChildItem -Filter *.exe | Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" }
+          if (-not $lines) { throw "no installer produced" }
+          $lines | Set-Content -Encoding ascii SHA256SUMS.txt
+          "### Tad MUC installer" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "Commit: ``$env:GITHUB_SHA``" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          $lines | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          $lines
+
+      - name: Upload installer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tad-muc-windows-${{ github.sha }}
+          path: |
+            packages/tad-app/release/*.exe
+            packages/tad-app/release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
