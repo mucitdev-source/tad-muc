@@ -34,6 +34,7 @@ import {
   TableQueryRep,
 } from "./QueryRep";
 import { Schema } from "./Schema";
+import { validateQueryRep } from "./queryValidation";
 import {
   mkAggExp,
   SQLFromQuery,
@@ -232,8 +233,32 @@ export const queryReviver = (key: string, val: any): any => {
   return retVal;
 };
 
+/*
+ * MUC hardening: every query that arrives in serialized form (from the
+ * renderer, a .tad workspace file, or a web client) is validated before it
+ * can reach SQL generation. Any object carrying a `_rep` (QueryExp or a
+ * look-alike plain object) is checked with validateQueryRep().
+ */
+const validateDeserializedQueries = (v: any, depth: number = 0): void => {
+  if (v == null || typeof v !== "object") {
+    return;
+  }
+  if (depth > 64) {
+    throw new Error("Rejected query: request nested too deeply");
+  }
+  if (Object.prototype.hasOwnProperty.call(v, "_rep")) {
+    validateQueryRep(v._rep);
+    return;
+  }
+  const children: any[] = Array.isArray(v) ? v : Object.values(v);
+  for (const child of children) {
+    validateDeserializedQueries(child, depth + 1);
+  }
+};
+
 export const deserializeQueryReq = (jsonStr: string): any => {
   const rq = JSON.parse(jsonStr, queryReviver);
+  validateDeserializedQueries(rq);
   return rq;
 };
 

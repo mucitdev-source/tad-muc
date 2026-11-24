@@ -368,7 +368,63 @@ const browseExportPath = async (
     title: "Export Filtered Data",
     filters: [fmtFilter],
   });
+  if (exportPath) {
+    // remember the path the user picked in the (trusted) native dialog
+    approvedExportPaths.set(win.webContents.id, path.resolve(exportPath));
+  }
   win.webContents.send("set-export-path", { exportPath });
+};
+
+/*
+ * MUC hardening: the export path arrives from the renderer (and can be typed
+ * by hand). Only allow csv/parquet, require an absolute path whose extension
+ * matches the format, and ask the user to confirm in a native dialog unless
+ * the path was chosen through the native Save dialog.
+ */
+const EXPORT_FORMATS = new Set(["csv", "parquet"]);
+const approvedExportPaths = new Map<number, string>();
+
+const checkExportRequest = (
+  win: BrowserWindow,
+  exportFormat: any,
+  exportPath: any
+): string | null => {
+  if (typeof exportFormat !== "string" || !EXPORT_FORMATS.has(exportFormat)) {
+    dialog.showErrorBox("Export", "Unsupported export format.");
+    return null;
+  }
+  if (typeof exportPath !== "string" || !path.isAbsolute(exportPath)) {
+    dialog.showErrorBox(
+      "Export",
+      "Please choose the export location with the Browse button."
+    );
+    return null;
+  }
+  const resolved = path.resolve(exportPath);
+  if (path.extname(resolved).toLowerCase() !== "." + exportFormat) {
+    dialog.showErrorBox(
+      "Export",
+      `The export file name must end with .${exportFormat}`
+    );
+    return null;
+  }
+  if (approvedExportPaths.get(win.webContents.id) !== resolved) {
+    const exists = fs.existsSync(resolved);
+    const choice = dialog.showMessageBoxSync(win, {
+      type: "warning",
+      title: "Confirm export",
+      message: `Export data to:\n${resolved}${
+        exists ? "\n\nThis file already exists and will be overwritten." : ""
+      }`,
+      buttons: ["Cancel", "Export"],
+      defaultId: 0,
+      cancelId: 0,
+    });
+    if (choice !== 1) {
+      return null;
+    }
+  }
+  return resolved;
 };
 
 ipcMain.on("browse-export-path", browseExportPath);
@@ -378,7 +434,13 @@ ipcMain.on("export-file", async (event: IpcMainEvent, exportFileReq: any) => {
   if (!win) {
     return;
   }
-  const { exportFormat, exportPath, parquetExportOptions } = exportFileReq;
+  const { exportFormat, exportPath: requestedPath, parquetExportOptions } =
+    exportFileReq ?? {};
+  const exportPath = checkExportRequest(win, exportFormat, requestedPath);
+  if (exportPath === null) {
+    win.webContents.send("close-export-progress-dialog");
+    return;
+  }
   const queryStr: string = await getFilterQuery(win);
   const req = reltab.deserializeQueryReq(queryStr);
   const { query, filterRowCount } = req;

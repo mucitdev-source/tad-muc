@@ -23,6 +23,7 @@ import {
   DataSourceProvider,
 } from "../DataSource";
 import { deserializeQueryReq, QueryExp } from "../QueryExp";
+import { validateTableName } from "../queryValidation";
 import {
   EncodedRequestHandler,
   TransportClient,
@@ -106,6 +107,8 @@ const dbConnGetTableSchema = async (
 ): Promise<Schema> => {
   const hrstart = process.hrtime();
   const { tableName } = req;
+  // MUC hardening: table names are interpolated unquoted into SQL
+  validateTableName(tableName);
   const schema = await conn.getTableSchema(tableName);
   const elapsed = process.hrtime(hrstart);
   log.info("dbGetTableSchema: evaluated query in", prettyHRTime(elapsed));

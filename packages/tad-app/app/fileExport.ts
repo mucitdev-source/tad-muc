@@ -6,6 +6,8 @@ import { DbDataSource } from "reltab";
 import { ExportFormat, ParquetExportOptions } from "tadviewer";
 import path from "path";
 
+const PARQUET_COMPRESSIONS = new Set(["uncompressed", "snappy", "gzip", "zstd"]);
+
 export const openExportBeginDialog = async (
   win: BrowserWindow,
   filterRowCount: number,
@@ -53,7 +55,14 @@ const exportParquet = async (
 
     const baseQuery = await appRtc.getSqlForQuery(query);
 
-    const copyQuery = `COPY (${baseQuery}) TO '${saveFilename}' (FORMAT 'parquet', COMPRESSION '${parquetExportOptions.compression}')`;
+    // MUC hardening: whitelist the compression codec and escape the path;
+    // both were interpolated into SQL unchecked.
+    const compression = parquetExportOptions?.compression;
+    if (!PARQUET_COMPRESSIONS.has(compression)) {
+      throw new Error("Unsupported Parquet compression: " + compression);
+    }
+    const quotedPath = "'" + saveFilename.replace(/'/g, "''") + "'";
+    const copyQuery = `COPY (${baseQuery}) TO ${quotedPath} (FORMAT 'parquet', COMPRESSION '${compression}')`;
 
     const rows = await appRtc.db.runSqlQuery(copyQuery);
   } catch (rawErr) {
