@@ -7,7 +7,7 @@ Jalankan seluruh pengujian ini setiap kali build baru akan didistribusikan, term
 |---|---|
 | `validator-test.js` | Uji regresi otomatis validator query `reltab` (10 bentuk query sah wajib lolos; 11 payload query dan 1 nama tabel berbahaya wajib ditolak). |
 | `make-tad-fixtures.js` | Membuat `fixtures/legit-pivot.tad` dan `fixtures/malicious-aggmap.tad` dengan path absolut sesuai komputer penguji. |
-| `fixtures/payload-xss.csv` | CSV berisi payload XSS/RCE (`calc`) dan URL berskema berbahaya (`smb://`, `file://`). |
+| `fixtures/payload-xss.csv` | CSV berisi payload XSS/RCE (membuka `calc` dan menulis berkas penanda `%TEMP%\tad-pwned.txt`) serta URL berskema berbahaya (`smb://`, `file://`). Dipakai juga oleh uji runtime otomatis di GitHub Actions. |
 | `fixtures/sample.csv` | Data contoh bersih untuk uji pivot dan filter. |
 | `check-fuses.js` | Memeriksa status Electron Fuses pada `Tad.exe` hasil build (RunAsNode, NODE_OPTIONS, `--inspect`, OnlyLoadAppFromAsar). |
 
@@ -31,7 +31,7 @@ Hasil yang diharapkan: semua baris `PASS` dan `RESULT: PASS` (exit code 0).
 
 | No | Langkah | Hasil yang diharapkan |
 |---|---|---|
-| 1 | Buka `fixtures\payload-xss.csv` | 5 baris tampil sebagai teks biasa. Kalkulator **tidak** terbuka. |
+| 1 | Tutup Kalkulator bila sedang terbuka, lalu buka `fixtures\payload-xss.csv` | 6 baris tampil sebagai teks biasa. Kalkulator **tidak** terbuka dan `%TEMP%\tad-pwned.txt` **tidak** terbentuk. |
 | 2 | Pada kolom `situs`, aktifkan *URLs as hyperlinks*, lalu klik URL baris 1 | Browser terbuka ke `https://example.com/profil?id=1`. |
 | 3 | Klik sel baris 2–5 kolom `situs` | Tidak terjadi apa pun: tidak ada link, tidak ada program atau share jaringan yang terbuka. |
 | 4 | Buka `fixtures\legit-pivot.tad` | Pivot per kota tampil (Bandung 4.200.000; Jakarta 4.250.000; Surabaya 980.000). |

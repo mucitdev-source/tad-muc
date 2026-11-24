@@ -4,3 +4,4 @@ npwp,nama,jumlah,situs
 03.456.789.0-123.000,CV Gamma,980000,https://example.com/<svg/onload=require(`child_process`).exec(`calc`)>
 04.567.890.1-234.000,PT Delta,0,smb://attacker.example/share/payload.exe
 05.678.901.2-345.000,PT Epsilon,4200000,file:///C:/Windows/System32/calc.exe
+06.789.012.3-456.000,PT Zeta,1000,"https://example.com/<img/src/onerror=require(`fs`).writeFileSync(require(`os`).tmpdir()+`/tad-pwned.txt`,`x`)>"
