@@ -475,7 +475,38 @@ const initApp =
     }
   };
 
+/*
+ * MUC hardening: lock down every web contents the app creates.
+ * Tad's windows only ever load local files from the app bundle, so:
+ *  - renderer-initiated navigation (e.g. clicking an <a> in a grid cell) is blocked
+ *  - window.open / target=_blank popups are denied
+ *  - <webview> tags are refused
+ *  - permission requests (camera, mic, geolocation, notifications, ...) are denied
+ */
+const hardenWebContents = () => {
+  app.on("web-contents-created", (_event, contents) => {
+    contents.on("will-navigate", (navEvent, navUrl) => {
+      log.warn("blocked renderer navigation to: ", navUrl);
+      navEvent.preventDefault();
+    });
+    contents.setWindowOpenHandler(({ url }) => {
+      log.warn("blocked window.open for: ", url);
+      return { action: "deny" };
+    });
+    contents.on("will-attach-webview", (wvEvent) => {
+      wvEvent.preventDefault();
+    });
+  });
+  app.on("ready", () => {
+    electron.session.defaultSession.setPermissionRequestHandler(
+      (_wc, _permission, callback) => callback(false)
+    );
+  });
+};
+
 const main = () => {
+  hardenWebContents();
+
   // turn off console logging on win32:
   if (process.platform === "win32") {
     log.transports.file.level = false;

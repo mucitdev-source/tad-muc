@@ -29,6 +29,13 @@ const mapIdent = (src: string): string => {
 
 const isAlpha = (ch: string): boolean => /^[A-Z]$/i.test(ch);
 
+/*
+ * MUC hardening: render a file path as a SQL string literal.
+ * Upstream interpolated paths directly ('${filePath}'), so a file name
+ * containing a single quote could inject arbitrary DuckDB SQL.
+ */
+const sqlStringLiteral = (s: string): string => "'" + s.replace(/'/g, "''") + "'";
+
 const MAXLEN = 16;
 
 /* generate a SQL table name from pathname */
@@ -61,7 +68,7 @@ export const nativeCSVImport = async (
   if (!tableName) {
     tableName = genTableName(filePath);
   }
-  const query = `CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM read_csv_auto('${filePath}')`;
+  const query = `CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM read_csv_auto(${sqlStringLiteral(filePath)})`;
   // console.log('nativeCSVImport: executing: ', query);
   try {
     /*
@@ -75,7 +82,7 @@ export const nativeCSVImport = async (
   } catch (err) {
     console.log("caught exception while importing: ", err);
     console.log("retrying with SAMPLE_SIZE=-1:");
-    const noSampleQuery = `CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM read_csv_auto('${filePath}', sample_size=-1)`;
+    const noSampleQuery = `CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM read_csv_auto(${sqlStringLiteral(filePath)}, sample_size=-1)`;
     try {
       /*
       const resObj = await dbConn.executeIterator(noSampleQuery);
@@ -117,7 +124,7 @@ export const nativeParquetImport = async (
   if (!tableName) {
     tableName = genTableName(filePath);
   }
-  const query = `CREATE OR REPLACE VIEW ${tableName} AS SELECT * FROM parquet_scan('${filePath}')`;
+  const query = `CREATE OR REPLACE VIEW ${tableName} AS SELECT * FROM parquet_scan(${sqlStringLiteral(filePath)})`;
   log.debug("*** parquet import: ", query);
   try {
     // Creating a view doesn't return a useful result.

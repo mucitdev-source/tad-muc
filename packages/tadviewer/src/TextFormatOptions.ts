@@ -27,15 +27,41 @@ export interface TextFormatOptionsProps {
   urlsAsHyperlinks: boolean;
 }
 
+// MUC hardening: hyperlink rendering is off by default. Cell contents come
+// from untrusted data files, so URLs are only rendered as links when the
+// user explicitly enables it for a column.
 const defaultTextFormatOptionsProps: TextFormatOptionsProps = {
   type: "TextFormatOptions",
-  urlsAsHyperlinks: true,
+  urlsAsHyperlinks: false,
 };
 
 const isValidURL = (s: string): boolean =>
   urlRegex({
     exact: true,
   }).test(s);
+
+// MUC hardening: url-regex accepts strings containing HTML markup
+// (e.g. "https://x.com/<img/src=x/onerror=...>") and non-web schemes
+// (file://, smb://). Only accept well-formed http(s) URLs.
+const SAFE_URL_PROTOCOLS = ["http:", "https:"];
+// Characters RFC 3986 never allows unencoded in a URL; their presence means
+// the cell is markup or junk, not a link.
+const DISALLOWED_URL_CHARS = /[\s<>"`\\{}|^]/;
+
+export const isSafeURL = (s: unknown): s is string => {
+  if (
+    typeof s !== "string" ||
+    DISALLOWED_URL_CHARS.test(s) ||
+    !isValidURL(s)
+  ) {
+    return false;
+  }
+  try {
+    return SAFE_URL_PROTOCOLS.includes(new URL(s).protocol);
+  } catch {
+    return false;
+  }
+};
 
 function stringify(value: any): string | null {
   if (value === null) {
@@ -63,9 +89,11 @@ export class TextFormatOptions
 
   getFormatter(): CellFormatter {
     const ff = (val?: any): string | undefined | null => {
-      if (this.urlsAsHyperlinks && val && isValidURL(val)) {
+      if (this.urlsAsHyperlinks && val && isSafeURL(val)) {
+        // MUC hardening: HTML-encode the URL before inserting it into markup.
         // Just return false from onclick handler to prevent default link handling
-        const ret = `<a href="${val}" onclick='return false;'>${val}</a>`;
+        const escVal = he.encode(val);
+        const ret = `<a href="${escVal}" onclick='return false;'>${escVal}</a>`;
         return ret;
       }
       // Try to deal with non-string values for cell values like lists or maps
@@ -88,7 +116,7 @@ export class TextFormatOptions
       column: number,
       val: any
     ) => {
-      if (this.urlsAsHyperlinks && val && isValidURL(val)) {
+      if (this.urlsAsHyperlinks && val && isSafeURL(val)) {
         appContext.openURL(val);
       }
     };

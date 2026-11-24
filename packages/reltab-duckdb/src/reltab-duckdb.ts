@@ -263,12 +263,20 @@ export class DuckDBDriver implements DbDriver {
   }
 }
 
+/*
+ * MUC hardening: do NOT download or load DuckDB extensions.
+ * Upstream ran `INSTALL 'httpfs'; LOAD 'httpfs'` on every connection, which
+ * downloads code from the internet and lets DuckDB read/write remote
+ * http(s):// and s3:// URLs. Tad is used here for local files only, so
+ * extension auto-install and auto-load are switched off instead.
+ */
 const loadExtensions = async (db: Database): Promise<void> => {
   try {
-    const ret = await db.exec(`INSTALL 'httpfs'; LOAD 'httpfs'`);
+    await db.exec(
+      `SET autoinstall_known_extensions = false; SET autoload_known_extensions = false;`
+    );
   } catch (err) {
-    log.error("caught exception loading extensions: ", err);
-    log.error("(ignoring unloadable extensions...)");
+    log.error("caught exception disabling extension autoload: ", err);
   }
 };
 

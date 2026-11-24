@@ -62,16 +62,31 @@ export function isJsDom(): boolean {
   }
 }
 
+/*
+ * MUC hardening: the upstream versions used `new Function(...)`, which is
+ * blocked by a Content-Security-Policy without 'unsafe-eval' (Tad's main
+ * window now ships such a CSP). These are equivalent checks without eval.
+ */
 function hasGlobal() {
-  return new Function("try {return this===global}catch(e){ return false}")();
+  try {
+    return (globalThis as any).global === globalThis;
+  } catch (e) {
+    return false;
+  }
 }
 
 function hasWindow() {
-  return new Function("try {return this===window}catch(e){ return false}")();
+  try {
+    return (globalThis as any).window === globalThis;
+  } catch (e) {
+    return false;
+  }
 }
 
 function hasDocument() {
-  return new Function(
-    "try {return this.document !== undefined}catch(e){ return false}"
-  )();
+  try {
+    return (globalThis as any).document !== undefined;
+  } catch (e) {
+    return false;
+  }
 }

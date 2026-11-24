@@ -123,7 +123,20 @@ const init = async () => {
 
     await initAppState(rtc, stateRef);
 
+    // MUC hardening: only hand http(s) URLs to the OS; never file://,
+    // smb://, or other schemes that can launch local programs.
     const openURL = (url: string) => {
+      let protocol: string;
+      try {
+        protocol = new URL(url).protocol;
+      } catch {
+        log.warn("openURL: ignoring malformed URL");
+        return;
+      }
+      if (protocol !== "http:" && protocol !== "https:") {
+        log.warn("openURL: blocked URL with disallowed scheme: ", protocol);
+        return;
+      }
       shell.openExternal(url);
     };
 
