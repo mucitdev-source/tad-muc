@@ -14,16 +14,11 @@ Ringkasan perubahan keamanan (rincian, bukti pengujian, dan risiko yang tersisa 
 - Electron diperbarui ke 45.4.1 dengan Electron Fuses (executable tidak dapat dipakai sebagai interpreter Node.js).
 - Pelaporan masalah diarahkan ke IT Support melalui `https://it-support.mucsystem.net/`.
 
-## Mengunduh Installer
+## Instalasi
 
-Installer Windows dibangun otomatis oleh GitHub Actions setiap kali branch `muc-hardening` diperbarui:
+**Ikuti [Panduan Instalasi](PANDUAN-INSTALASI.md)** – langkah lengkap untuk mengunduh installer dari GitHub Actions, memverifikasi keasliannya (SHA-256), memasang, menerapkan aturan firewall, memastikan yang terpasang adalah build MUC, serta uji keamanan singkat.
 
-1. Buka tab **Actions** → workflow **Build Tad MUC (Windows)** → pilih run terbaru yang berstatus sukses.
-2. Unduh artifact `tad-muc-windows-<commit>` (ZIP) pada bagian **Artifacts**.
-3. Ekstrak, lalu cocokkan hash `Tad-MUC-Setup-<versi>.exe` dengan `SHA256SUMS.txt` (`Get-FileHash` di PowerShell).
-4. Instal untuk semua pengguna (`C:\Program Files\Tad\`) dan terapkan aturan Windows Defender Firewall sesuai `MUC-HARDENING.md`.
-
-Installer belum ditandatangani secara digital; Windows SmartScreen akan menampilkan peringatan saat instalasi.
+Ringkasnya: unduh artifact `tad-muc-windows-<commit>` dari run terbaru yang sukses pada workflow **Build Tad MUC (Windows)**, cocokkan hash `Tad-MUC-Setup-<versi>.exe` dengan `SHA256SUMS.txt`, lalu instal untuk semua pengguna (`C:\Program Files\Tad\`).
 
 ## Membangun dan Menguji
 

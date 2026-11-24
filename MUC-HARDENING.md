@@ -133,7 +133,7 @@ npm run dist
 
 Hasil installer berada di `packages\tad-app\release\`.
 
-**Build otomatis (GitHub Actions).** Workflow `.github/workflows/build-windows.yml` menjalankan langkah yang sama di runner Windows setiap kali ada push ke branch `muc-hardening` (atau melalui *Actions → Build Tad MUC (Windows) → Run workflow*). Selain build, workflow juga menjalankan uji regresi validator, memeriksa Electron Fuses (`tools/muc-security/check-fuses.js`), memastikan `app-update.yml` tidak ikut terpaket dan modul DuckDB tersedia, lalu menerbitkan installer beserta `SHA256SUMS.txt` sebagai artifact (disimpan 30 hari). Action pihak ketiga dikunci ke commit SHA, workflow hanya memiliki izin baca, dan tidak memakai secret.
+**Build otomatis (GitHub Actions).** Workflow `.github/workflows/build-windows.yml` menjalankan langkah yang sama di runner Windows setiap kali ada push ke branch `muc-hardening` (atau melalui *Actions → Build Tad MUC (Windows) → Run workflow*). Push yang hanya mengubah dokumentasi (`*.md`, `doc/`) tidak memicu build. Panduan instalasi untuk pengguna: [`PANDUAN-INSTALASI.md`](PANDUAN-INSTALASI.md). Selain build, workflow juga menjalankan uji regresi validator, memeriksa Electron Fuses (`tools/muc-security/check-fuses.js`), memastikan `app-update.yml` tidak ikut terpaket dan modul DuckDB tersedia, lalu menerbitkan installer beserta `SHA256SUMS.txt` sebagai artifact (disimpan 30 hari). Action pihak ketiga dikunci ke commit SHA, workflow hanya memiliki izin baca, dan tidak memakai secret.
 
 Sebelum distribusi:
 

@@ -9,6 +9,10 @@ name: Build Tad MUC (Windows)
 on:
   push:
     branches: [muc-hardening]
+    # documentation-only changes do not need a new installer
+    paths-ignore:
+      - "**/*.md"
+      - "doc/**"
   workflow_dispatch:
 
 permissions:
