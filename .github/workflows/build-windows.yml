@@ -157,6 +157,7 @@ jobs:
           "RESULT: PASS - payload CSV rendered and did not execute code"
 
       - name: Positive control - official Tad 0.14.0 must execute the payload
+        if: always()
         continue-on-error: true
         run: |
           $setup = Join-Path $env:RUNNER_TEMP "Tad-Setup-0.14.0.exe"

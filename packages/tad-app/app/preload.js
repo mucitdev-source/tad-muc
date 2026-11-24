@@ -8,11 +8,14 @@
  */
 const { contextBridge, ipcRenderer } = require("electron");
 
-// openParams are appended to process.argv via webPreferences.additionalArguments
-const ARG_PREFIX = "--tadOpenParams=";
+// openParams are appended to process.argv via webPreferences.additionalArguments.
+// In a sandboxed renderer process.argv comes from Chromium's command line, and
+// on Windows Chromium lower-cases switch names ("--tadopenparams="), so the
+// prefix must be matched case-insensitively. The JSON value keeps its case.
+const ARG_PREFIX = "--tadopenparams=";
 let openParams = null;
 for (const arg of process.argv) {
-  if (arg.startsWith(ARG_PREFIX)) {
+  if (arg.toLowerCase().startsWith(ARG_PREFIX)) {
     openParams = JSON.parse(arg.slice(ARG_PREFIX.length));
   }
 }

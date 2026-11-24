@@ -4,7 +4,7 @@
 |---|---|
 | Branch | `muc-hardening` |
 | Basis upstream | `antonycourtney/tad` commit `272ffa0` (5 Maret 2025, versi 0.14.0) |
-| Versi build MUC | `0.14.0-muc.2` (installer `Tad-MUC-Setup-0.14.0-muc.2.exe`) |
+| Versi build MUC | `0.14.0-muc.3` (installer `Tad-MUC-Setup-0.14.0-muc.3.exe`) |
 | Repositori | `https://github.com/mucitdev-source/tad-muc` |
 | Tanggal | 24 November 2026 |
 | Penyusun | IT Support – Penyusun dan Koordinator Kebijakan Keamanan Informasi |

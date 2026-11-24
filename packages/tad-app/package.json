@@ -1,6 +1,6 @@
 {
   "name": "tad",
-  "version": "0.14.0-muc.2",
+  "version": "0.14.0-muc.3",
   "homepage": "https://github.com/mucitdev-source/tad-muc",
   "description": "Tad tabular data viewer - security-hardened internal build for PT Multi Utama Consultindo (not an official Tad release)",
   "main": "dist/main.bundle.js",
