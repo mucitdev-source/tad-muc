@@ -4,6 +4,8 @@
 |---|---|
 | Branch | `muc-hardening` |
 | Basis upstream | `antonycourtney/tad` commit `272ffa0` (5 Maret 2025, versi 0.14.0) |
+| Versi build MUC | `0.14.0-muc.1` (installer `Tad-MUC-Setup-0.14.0-muc.1.exe`) |
+| Repositori | `https://github.com/mucitdev-source/tad-muc` |
 | Tanggal | 24 November 2026 |
 | Penyusun | IT Support – Penyusun dan Koordinator Kebijakan Keamanan Informasi |
 | Status | Siap uji fungsional di Windows (lihat bagian 6) |
@@ -77,6 +79,7 @@ Dokumen ini mencatat seluruh perubahan keamanan pada fork internal Tad sebelum a
 | H24 | Spell checker dimatikan sehingga tidak ada unduhan kamus. Hasil: **nol koneksi keluar** | `app/main.ts`, `app/appWindow.ts`, `app/quickStart.ts` |
 | H25 | `"publish": null` (tidak ada `app-update.yml` yang mengarah ke GitHub upstream); output packaging ke `release/` | `package.json` |
 | H26 | Binary DuckDB N-API bawaan dipaketkan tanpa rebuild (`"npmRebuild": false`), sehingga build di Windows tidak membutuhkan compiler C++ | `package.json` |
+| H27 | Identitas build dipisahkan dari rilis resmi: versi `0.14.0-muc.1`, `appId` `net.mucsystem.tad`, publisher "PT Multi Utama Consultindo - IT Support" (penulis asli dicantumkan sebagai kontributor), nama installer `Tad-MUC-Setup-<versi>.exe`, homepage ke repositori MUC; pipeline CI upstream (`azure-pipelines.yml`) dihapus | `packages/tad-app/package.json`, `README.md` |
 
 ## 3. Bukti Pengujian
 

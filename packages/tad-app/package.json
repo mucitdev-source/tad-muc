@@ -1,12 +1,12 @@
 {
   "name": "tad",
-  "version": "0.14.0",
-  "homepage": "https://www.tadviewer.com",
-  "description": "Tabular data viewer desktop app, built with Electron",
+  "version": "0.14.0-muc.1",
+  "homepage": "https://github.com/mucitdev-source/tad-muc",
+  "description": "Tad tabular data viewer - security-hardened internal build for PT Multi Utama Consultindo (not an official Tad release)",
   "main": "dist/main.bundle.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/antonycourtney/tad.git"
+    "url": "https://github.com/mucitdev-source/tad-muc.git"
   },
   "scripts": {
     "clean": "rimraf dist",
@@ -34,7 +34,10 @@
     "sql",
     "database"
   ],
-  "author": "Antony Courtney <antony@antonycourtney.com>",
+  "author": "PT Multi Utama Consultindo - IT Support",
+  "contributors": [
+    "Antony Courtney <antony@antonycourtney.com> (original author of Tad)"
+  ],
   "license": "MIT",
   "dependencies": {
     "aggtree": "^0.12.0",
@@ -88,7 +91,7 @@
     "webpack-node-externals": "^3.0.0"
   },
   "build": {
-    "appId": "com.antonycourtney.tad",
+    "appId": "net.mucsystem.tad",
     "asarUnpack": [
       "**/*.node",
       "**/*reltab*"
@@ -172,7 +175,8 @@
     "nodeGypRebuild": false,
     "npmRebuild": false,
     "nsis": {
-      "oneClick": false
+      "oneClick": false,
+      "artifactName": "Tad-MUC-Setup-${version}.${ext}"
     },
     "productName": "Tad"
   }

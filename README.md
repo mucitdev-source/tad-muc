@@ -1,75 +1,38 @@
-# Tad
+# Tad – Build Internal MUC (Hardened)
 
-This repository contains the source code for [Tad](https://www.tadviewer.com), an application for viewing and analyzing tabular
-data sets.
+Repositori ini berisi **build internal Tad** untuk PT Multi Utama Consultindo (MUC): aplikasi desktop untuk melihat dan menganalisis data tabular (CSV, Parquet, dan berkas database DuckDB) dengan mesin [DuckDB](https://duckdb.org/) yang berjalan sepenuhnya di komputer pengguna.
 
-The Tad desktop application enables you to quickly view and explore tabular data in several of the most popular
-tabular data file formats: CSV, Parquet, and SQLite and DuckDb database files.
-Internally, the application is powered by an in-memory instance of [DuckDb](https://duckdb.org/), a fast, embeddable database engine optimized for analytic queries.
+> **Ini bukan rilis resmi Tad.** Kode ini adalah fork dari proyek open source [Tad](https://github.com/antonycourtney/tad) karya Antony Courtney (versi 0.14.0, commit `272ffa0`), yang telah dimodifikasi dan di-hardening oleh IT Support MUC. Jangan gunakan installer dari situs resmi Tad untuk keperluan kerja MUC; gunakan hanya installer dari repositori ini.
 
-The core of Tad is a React UI component that implements a hierarchical pivot table that allows you to specify a combination of pivot, filter, aggregate, sort, column selection, column ordering and basic column formatting operations. Tad delegates to a SQL database for storage and analytics, and generates SQL queries to perform all
-analytic operations specified in the UI.
+## Perbedaan dengan Tad Upstream
 
-Tad can be launched from the command line like this:
+Ringkasan perubahan keamanan (rincian, bukti pengujian, dan risiko yang tersisa ada di [`MUC-HARDENING.md`](MUC-HARDENING.md)):
 
-    $ tad MetObjects.csv
+- Membuka berkas data dari pihak luar tidak dapat menjalankan kode di komputer pengguna: isi sel di-escape, Content Security Policy ketat, dan jendela aplikasi berjalan dalam sandbox Chromium tanpa akses Node.js.
+- Query ke DuckDB divalidasi sehingga workspace `.tad` atau nama berkas tidak dapat menyisipkan perintah SQL; berkas `.duckdb` dibuka read-only.
+- Tidak ada koneksi jaringan keluar: ekstensi DuckDB `httpfs`, auto-updater, provider BigQuery, dukungan S3, dan unduhan kamus spell checker dinonaktifkan.
+- Electron diperbarui ke 45.4.1 dengan Electron Fuses (executable tidak dapat dipakai sebagai interpreter Node.js).
+- Pelaporan masalah diarahkan ke IT Support melalui portal `my.mucsystem.net`.
 
-This will open a window with a scrollable view of the full contents of the CSV file:
+## Mengunduh Installer
 
-![Tad screenshot](doc/screenshots/tad-metobjects-unpivoted.png "Unpivoted view of CSV file")
+Installer Windows dibangun otomatis oleh GitHub Actions setiap kali branch `muc-hardening` diperbarui:
 
-Tad uses [SlickGrid](http://slickgrid.net/) for rendering the data grid. This allows Tad to support efficient linear
-scrolling of the entire file, even for very large (millions of rows) data sets.
+1. Buka tab **Actions** → workflow **Build Tad MUC (Windows)** → pilih run terbaru yang berstatus sukses.
+2. Unduh artifact `tad-muc-windows-<commit>` (ZIP) pada bagian **Artifacts**.
+3. Ekstrak, lalu cocokkan hash `Tad-MUC-Setup-<versi>.exe` dengan `SHA256SUMS.txt` (`Get-FileHash` di PowerShell).
+4. Instal untuk semua pengguna (`C:\Program Files\Tad\`) dan terapkan aturan Windows Defender Firewall sesuai `MUC-HARDENING.md`.
 
-A few additional mouse clicks on the above view yields this view, pivoted by a few
-columns (`Department`, `Classification`, `Period` and `Culture`), sorted by the `Object Start Date` column, and
-with columns re-ordered:
+Installer belum ditandatangani secara digital; Windows SmartScreen akan menampilkan peringatan saat instalasi.
 
-![tad screenshot](doc/screenshots/tad-metobjects-pivoted.png "Met Museum Objects with Pivots")
+## Membangun dan Menguji
 
-# Installing Tad
+- Panduan build Windows: `MUC-HARDENING.md` bagian 4.
+- Uji keamanan sebelum distribusi: [`tools/muc-security/README.md`](tools/muc-security/README.md).
+- Komponen `tadweb-server` dan `tadweb-app` tidak dibangun dan tidak boleh dijalankan.
 
-The easiest way to install the Tad desktop app is to use a pre-packaged binary release. See [The Tad Landing Page](http://tadviewer.com/#news) for information on the latest release and download links, or go straight to the [releases](./releases) page.
+## Lisensi dan Kredit
 
-# History and What's Here
+Tad dikembangkan oleh Antony Courtney dan para kontributornya, dan dirilis di bawah [Lisensi MIT](LICENSE). Pemberitahuan hak cipta asli dipertahankan sesuai ketentuan lisensi tersebut. Modifikasi pada repositori ini dibuat oleh IT Support PT Multi Utama Consultindo untuk penggunaan internal.
 
-Tad was initially released in 2017 as a standalone desktop application for viewing and exploring CSV files.
-
-The core of Tad is a React UI component that implements a hierarchical pivot table that allows you to specify a combination of pivot, filter, aggregate, sort, column selection, column ordering and basic column formatting operations. Tad delegates to a SQL database for storage and analytics, and generates SQL queries to perform all
-analytic operations specified in the UI.
-
-This repository is a modular refactor of the original Tad source code, with several key improvements on the original code base:
-
-- The repository is organized as a modular [Lerna](https://lerna.js.org/) based monorepo.
-- The code has been ported to TypeScript and the UI code has been updated to React Hooks.
-- There is support for communicating with multiple database back ends for reltab (Tad's SQL generation and query evaluation layer), in addition to the original sqlite. Current backends (in varying degrees of completeness) include DuckDb, Snowflake, Google BigQuery, and AWS Athena (Presto)
-- There is a minimal proof-of-concept web-based front-end to demonstrate how Tad can be deployed on the web.
-- The core Tad pivot table component now builds in its own module independent of any front end. This should allow embedding the Tad pivot table in other applications or contexts.
-
-## The Essential Packages
-
-The core packages that are used to build Tad are found in the [packages](./packages) sub-directory. These are the packages
-used to build the Tad desktop application:
-
-- [**reltab**](./packages/reltab) - The core abstraction used in Tad for programmatically constructing and executing relational SQL queries. This also defines the driver interface implemented by specific database back-ends, and a small, transport-agnostic remoting layer to allow queries and results to be transmitted between a web browser
-  (or electron renderer process) and a reltab backend server.
-- [**reltab-duckdb**](./packages/reltab-duckdb/) -- reltab driver for DuckDb
-- [**reltab-sqlite**](./packages/reltab-sqlite/) -- reltab driver for SQLite
-- [**aggtree**](./packages/aggtree/) - A library built on top of reltab for constructing pivot trees from relational queries.
-- [**tadviewer**](./packages/tadviewer/) - The core Tad pivot table UI as a standalone, embeddable React component.
-- [**tad-app**](./packages/tad-app/) - The Tad desktop application, built with Electron
-
-## Experimental Packages
-
-This repository also includes a number of proof-of-concept experimental packages, in varying states of completeness. These are provided for reference and as a starting
-point for further investigation and development.
-
-- [**tadweb-app**](./packages/tadweb-app/) - A minimal web app built with [tadviewer](./packages/tadviewer/), to demonstrate Tad running in a web browser.
-- [**tadweb-server**](./packages/tadweb-server/) - A reference web server for serving the Tad web app and providing the reltab back end.
-- [**reltab-aws-athena**](./packages/reltab-aws-athena/) - reltab driver for AWS Athena
-- [**reltab-bigquery**](./packages/reltab-bigquery/) - reltab driver for Google BigQuery
-- [**reltab-snowflake**](./packages/reltab-snowflake/) - reltab driver for Snowflake
-
-# Building Tad from Source
-
-Detailed instructions on building tad from sources available in [doc/building.md](doc/building.md)
+Dokumentasi pengembangan dari proyek asli tetap tersedia di folder [`doc/`](doc/).
