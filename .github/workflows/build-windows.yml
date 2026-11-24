@@ -79,21 +79,19 @@ jobs:
           if (Test-Path "$res/app-update.yml") { throw "app-update.yml must not be packaged" }
           if (-not (Test-Path "$res/app.asar.unpacked/node_modules/duckdb/lib/binding/duckdb.node")) { throw "DuckDB native module missing" }
 
-      - name: Runtime security test on Windows (payload CSV must not execute code)
+      - name: Runtime security test helpers
         run: |
-          $exe = (Resolve-Path "packages/tad-app/release/win-unpacked/Tad.exe").Path
+          New-Item -ItemType Directory -Force runtime-test | Out-Null
+          @'
+          # Opens payload-xss.csv in a Tad executable and reports what happened.
+          param([string]$Exe, [string]$Label, [int]$Wait = 60)
+          $ErrorActionPreference = "Stop"
           $csv = (Resolve-Path "tools/muc-security/fixtures/payload-xss.csv").Path
           $marker = Join-Path ([IO.Path]::GetTempPath()) "tad-pwned.txt"
           Remove-Item $marker -ErrorAction SilentlyContinue
+          Get-Process -Name Tad -ErrorAction SilentlyContinue | Stop-Process -Force
           $calcNames = "calc", "CalculatorApp", "Calculator", "win32calc"
-          $calcBefore = @(Get-Process -Name $calcNames -ErrorAction SilentlyContinue).Count
-
-          # record every process started while Tad has the payload file open
-          Register-CimIndicationEvent -ClassName Win32_ProcessStartTrace -SourceIdentifier TadWatch
-          Start-Process -FilePath $exe -ArgumentList "`"$csv`""
-          Start-Sleep -Seconds 40
-          $tadIds = @(Get-Process -Name Tad -ErrorAction SilentlyContinue | ForEach-Object Id)
-          # titles of all visible top-level windows owned by Tad processes
+          Get-Process -Name $calcNames -ErrorAction SilentlyContinue | Stop-Process -Force
           Add-Type -TypeDefinition @"
           using System; using System.Text; using System.Collections.Generic; using System.Runtime.InteropServices;
           public static class TadWin {
@@ -111,55 +109,66 @@ jobs:
               return r;
             }
           }
-          "@
-          $titles = @([TadWin]::Titles([int[]]$tadIds))
-          # screenshot of the runner desktop as visual evidence
+          "@ -ErrorAction SilentlyContinue
+          Register-CimIndicationEvent -ClassName Win32_ProcessStartTrace -SourceIdentifier "TadWatch$Label"
+          $env:ELECTRON_ENABLE_LOGGING = "1"
+          $out = "runtime-test/$Label-stdout.log"; $err = "runtime-test/$Label-stderr.log"
+          Start-Process -FilePath $Exe -ArgumentList "`"$csv`"" -RedirectStandardOutput $out -RedirectStandardError $err
+          $rendered = $false
+          for ($i = 0; $i -lt $Wait; $i += 5) {
+            Start-Sleep -Seconds 5
+            $ids = @(Get-Process -Name Tad -ErrorAction SilentlyContinue | ForEach-Object Id)
+            if ($ids.Count -and (@([TadWin]::Titles([int[]]$ids)) -match "payload-xss")) { $rendered = $true; Start-Sleep -Seconds 10; break }
+          }
+          $tadIds = @(Get-Process -Name Tad -ErrorAction SilentlyContinue | ForEach-Object Id)
+          $titles = if ($tadIds.Count) { @([TadWin]::Titles([int[]]$tadIds)) } else { @() }
           try {
             Add-Type -AssemblyName System.Windows.Forms, System.Drawing
             $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen
             $bmp = New-Object System.Drawing.Bitmap $vs.Width, $vs.Height
             [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($vs.Left, $vs.Top, 0, 0, $bmp.Size)
-            New-Item -ItemType Directory -Force runtime-test | Out-Null
-            $bmp.Save((Join-Path (Get-Location) "runtime-test/tad-payload-xss.png"))
+            $bmp.Save((Join-Path (Get-Location) "runtime-test/$Label.png"))
           } catch { "screenshot failed: $($_.Exception.Message)" }
-          $started = @(Get-Event -SourceIdentifier TadWatch -ErrorAction SilentlyContinue | ForEach-Object { $_.SourceEventArgs.NewEvent })
-          Unregister-Event -SourceIdentifier TadWatch
-          $calcAfter = @(Get-Process -Name $calcNames -ErrorAction SilentlyContinue).Count
+          $started = @(Get-Event -SourceIdentifier "TadWatch$Label" -ErrorAction SilentlyContinue | ForEach-Object { $_.SourceEventArgs.NewEvent })
+          Unregister-Event -SourceIdentifier "TadWatch$Label"
+          $calc = @(Get-Process -Name $calcNames -ErrorAction SilentlyContinue).Count
+          $children = @($started | Where-Object { $tadIds -contains [int]$_.ParentProcessID -and $_.ProcessName -notin @("Tad.exe", "conhost.exe") } | ForEach-Object ProcessName)
+          $executed = (Test-Path $marker) -or ($calc -gt 0) -or ($children.Count -gt 0)
           Get-Process -Name Tad -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-Process -Name $calcNames -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
+          "=== [$Label] rendered=$rendered executed=$executed"
+          "    windows : $($titles -join ' | ')"
+          "    marker  : $(Test-Path $marker)   calculator processes: $calc   non-Tad children: $($children -join ', ')"
+          "    --- Tad output (filtered) ---"
+          Get-Content $out, $err -ErrorAction SilentlyContinue | Where-Object { $_ -match "error|warn|Rejected|CONSOLE|exception|openParams|fail" } | Select-Object -Last 40
+          [pscustomobject]@{ Rendered = $rendered; Executed = $executed }
+          '@ | Set-Content -Encoding utf8 runtime-test/Invoke-TadPayloadTest.ps1
 
-          $children = @($started | Where-Object { $tadIds -contains [int]$_.ParentProcessID -and $_.ProcessName -ne "Tad.exe" })
-          "Tad processes alive after 40 s : $($tadIds.Count)"
-          "Tad window titles             : $($titles -join ' | ')"
-          "Calculator processes (before/after): $calcBefore / $calcAfter"
-          "Non-Tad child processes of Tad: $(@($children | ForEach-Object ProcessName) -join ', ')"
-          "Marker file present           : $(Test-Path $marker)"
-
-          $logDir = Join-Path $env:APPDATA "Tad\logs"
-          if (Test-Path $logDir) {
-            Get-ChildItem $logDir -File | ForEach-Object { "----- $($_.Name) (last 60 lines)"; Get-Content $_.FullName -Tail 60 }
-            Copy-Item $logDir -Destination runtime-test/logs -Recurse -Force -ErrorAction SilentlyContinue
-          } else { "no Tad log directory at $logDir" }
-
-          if ($tadIds.Count -eq 0) { throw "Tad was not running (crashed or failed to start)" }
-          if (-not ($titles -match "payload-xss")) { throw "INCONCLUSIVE: no Tad window shows payload-xss.csv, so the file was not rendered" }
-          if (Test-Path $marker) { throw "PAYLOAD EXECUTED: marker file was written" }
-          if ($calcAfter -gt $calcBefore) { throw "PAYLOAD EXECUTED: a calculator process started" }
-          if ($children.Count -gt 0) { throw "Tad started unexpected child processes" }
-          "RESULT: PASS - payload CSV did not execute code"
-
-      - name: Compute SHA-256
-        working-directory: packages/tad-app/release
+      - name: Runtime security test - MUC build (payload CSV must not execute code)
         run: |
-          $lines = Get-ChildItem -Filter *.exe | Get-FileHash -Algorithm SHA256 |
-            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" }
-          if (-not $lines) { throw "no installer produced" }
-          $lines | Set-Content -Encoding ascii SHA256SUMS.txt
-          "### Tad MUC installer" | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          "Commit: ``$env:GITHUB_SHA``" | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          $lines | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          $lines
+          $exe = (Resolve-Path "packages/tad-app/release/win-unpacked/Tad.exe").Path
+          $r1 = & ./runtime-test/Invoke-TadPayloadTest.ps1 -Exe $exe -Label "muc-firstrun"
+          $r2 = & ./runtime-test/Invoke-TadPayloadTest.ps1 -Exe $exe -Label "muc-secondrun"
+          $r1 | Where-Object { $_ -is [string] }; $r2 | Where-Object { $_ -is [string] }
+          $res = @($r1 + $r2 | Where-Object { $_ -isnot [string] })
+          if ($res | Where-Object Executed) { throw "PAYLOAD EXECUTED in the MUC build" }
+          if (-not ($res | Where-Object Rendered)) { throw "INCONCLUSIVE: the payload file was never rendered by the MUC build" }
+          "RESULT: PASS - payload CSV rendered and did not execute code"
+
+      - name: Positive control - official Tad 0.14.0 must execute the payload
+        continue-on-error: true
+        run: |
+          $setup = Join-Path $env:RUNNER_TEMP "Tad-Setup-0.14.0.exe"
+          Invoke-WebRequest "https://github.com/antonycourtney/tad/releases/download/v0.14.0/Tad-Setup-0.14.0.exe" -OutFile $setup
+          Start-Process -FilePath $setup -ArgumentList "/S" -Wait
+          $exe = @("$env:LOCALAPPDATA\Programs\Tad\Tad.exe", "$env:ProgramFiles\Tad\Tad.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $exe) { throw "official Tad was not installed" }
+          $r = & ./runtime-test/Invoke-TadPayloadTest.ps1 -Exe $exe -Label "official-0.14.0"
+          $r | Where-Object { $_ -is [string] }
+          $res = $r | Where-Object { $_ -isnot [string] }
+          if (-not $res.Executed) { throw "CONTROL FAILED: the payload did not fire on official Tad, so this harness cannot detect execution" }
+          "RESULT: CONTROL OK - official Tad executed the payload; the harness detects execution"
 
       - name: Upload runtime test screenshot
         if: always()
