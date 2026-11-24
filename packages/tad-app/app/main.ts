@@ -495,9 +495,18 @@ const hardenWebContents = () => {
     });
   });
   app.on("ready", () => {
-    electron.session.defaultSession.setPermissionRequestHandler(
-      (_wc, _permission, callback) => callback(false)
+    const ses = electron.session.defaultSession;
+    ses.setPermissionRequestHandler((_wc, _permission, callback) =>
+      callback(false)
     );
+    // Tad makes no network requests of its own; also make sure Chromium's
+    // spell checker never downloads dictionaries (redirector.gvt1.com).
+    ses.setSpellCheckerEnabled(false);
+    if (process.platform === "linux") {
+      // Linux uses Hunspell and would fetch a dictionary for the UI language
+      // (Windows/macOS use the OS spell checker and download nothing).
+      ses.setSpellCheckerLanguages([]);
+    }
   });
 };
 

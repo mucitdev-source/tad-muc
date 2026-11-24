@@ -112,6 +112,8 @@ const create = async (openParams: OpenParams): Promise<BrowserWindow> => {
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
+      // no spell-check dictionary downloads from Google's CDN
+      spellcheck: false,
       preload: path.join(__dirname, "preload.js"),
       additionalArguments: [`--tadOpenParams=${JSON.stringify(openParams)}`],
     },

@@ -62,6 +62,7 @@ export const showQuickStart = () => {
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: true,
+        spellcheck: false,
         preload: path.join(__dirname, "quickstartPreload.js"),
       },
     });

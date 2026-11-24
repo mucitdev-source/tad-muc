@@ -288,10 +288,10 @@ const duckdbDataSourceProvider: DataSourceProvider = {
     // read-only so neither Tad nor any injected SQL can modify them, and so a
     // crafted .tad workspace cannot create new database files at arbitrary
     // paths. The in-memory database used for CSV/Parquet import stays writable.
-    const db =
-      dbfile === ":memory:"
-        ? await Database.create(dbfile)
-        : await Database.create(dbfile, { access_mode: "READ_ONLY" });
+    const inMemory = dbfile === ":memory:" || dbfile === "";
+    const db = inMemory
+      ? await Database.create(dbfile)
+      : await Database.create(dbfile, { access_mode: "READ_ONLY" });
     await loadExtensions(db);
     // turn on fast parallel CSV loading:
     // await db.exec("SET experimental_parallel_csv=true;");
