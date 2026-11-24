@@ -171,6 +171,20 @@ jobs:
           if (-not $res.Executed) { throw "CONTROL FAILED: the payload did not fire on official Tad, so this harness cannot detect execution" }
           "RESULT: CONTROL OK - official Tad executed the payload; the harness detects execution"
 
+      - name: Compute SHA-256
+        working-directory: packages/tad-app/release
+        run: |
+          $lines = Get-ChildItem -Filter *.exe | Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" }
+          if (-not $lines) { throw "no installer produced" }
+          $lines | Set-Content -Encoding ascii SHA256SUMS.txt
+          "### Tad MUC installer" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "Commit: ``$env:GITHUB_SHA``" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          $lines | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          $lines
+
       - name: Upload runtime test screenshot
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
