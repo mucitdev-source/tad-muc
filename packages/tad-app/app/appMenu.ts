@@ -1,14 +1,19 @@
-import * as updater from "./updater";
 import * as appWindow from "./appWindow";
 import * as quickStart from "./quickStart";
 import electron, {
   MenuItem,
+  BaseWindow,
   BrowserWindow,
   KeyboardEvent,
   MenuItemConstructorOptions,
 } from "electron";
 
 const Menu = electron.Menu;
+
+// Electron >= 29 passes a BaseWindow to menu click handlers.
+const asBrowserWindow = (
+  w: BaseWindow | undefined
+): BrowserWindow | undefined => (w instanceof BrowserWindow ? w : undefined);
 const isDarwin = process.platform === "darwin";
 let appMenu: electron.Menu | null = null;
 const separatorMenuItem: MenuItemConstructorOptions = {
@@ -22,19 +27,16 @@ const aboutTadMenuItem = () => {
   };
 };
 
-const checkForUpdateMenuItem = () => {
-  return {
-    label: "Check for Updates",
-    click: updater.checkForUpdates,
-  };
-};
+// MUC hardening: no "Check for Updates" -- the internal build must never
+// replace itself with an upstream release. Updates are distributed by IT.
 
 export const createMenu = () => {
   const fileSubmenu: MenuItemConstructorOptions[] = [
     {
       label: "New Tad Window",
       accelerator: "CmdOrCtrl+N",
-      click: (item: MenuItem, focusedWindow: BrowserWindow | undefined) => {
+      click: (item: MenuItem, focusedWindowBase: BaseWindow | undefined) => {
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
         appWindow.newWindow(focusedWindow);
       },
     },
@@ -42,14 +44,16 @@ export const createMenu = () => {
     {
       label: "Open File...",
       accelerator: "CmdOrCtrl+O",
-      click: (item: MenuItem, focusedWindow: BrowserWindow | undefined) => {
+      click: (item: MenuItem, focusedWindowBase: BaseWindow | undefined) => {
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
         appWindow.openDialog("openFile", focusedWindow);
       },
     },
     {
       label: "Open Directory...",
       accelerator: "CmdOrCtrl+O",
-      click: (item: MenuItem, focusedWindow: BrowserWindow | undefined) => {
+      click: (item: MenuItem, focusedWindowBase: BaseWindow | undefined) => {
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
         appWindow.openDialog("openDirectory", focusedWindow);
       },
     },
@@ -60,9 +64,10 @@ export const createMenu = () => {
       accelerator: "Shift+CmdOrCtrl+S",
       click: (
         item: MenuItem,
-        focusedWindow: BrowserWindow | undefined,
+        focusedWindowBase: BaseWindow | undefined,
         event: KeyboardEvent
       ) => {
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
         appWindow.saveAsDialog();
       },
     },
@@ -70,9 +75,10 @@ export const createMenu = () => {
       label: "Export...",
       click: (
         item: MenuItem,
-        focusedWindow: BrowserWindow | undefined,
+        focusedWindowBase: BaseWindow | undefined,
         event: KeyboardEvent
       ) => {
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
         if (focusedWindow) {
           appWindow.beginExport(focusedWindow);
         }
@@ -84,9 +90,10 @@ export const createMenu = () => {
       label: "Export Filtered CSV...",
       click: (
         item: MenuItem,
-        focusedWindow: BrowserWindow | undefined,
+        focusedWindowBase: BaseWindow | undefined,
         event: KeyboardEvent
       ) => {
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
         if (focusedWindow) {
           appWindow.exportFiltered(focusedWindow);
         }
@@ -121,9 +128,10 @@ export const createMenu = () => {
       type: "checkbox",
       click: (
         item: MenuItem,
-        focusedWindow: BrowserWindow | undefined,
+        focusedWindowBase: BaseWindow | undefined,
         event: KeyboardEvent
       ) => {
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
         console.log("show hidden...: ", item);
         focusedWindow?.webContents.send("set-show-hidden-cols", item.checked);
       },
@@ -134,20 +142,23 @@ export const createMenu = () => {
       label: "Quick Start Guide",
       click: (
         item: MenuItem,
-        focusedWindow: BrowserWindow | undefined,
+        focusedWindowBase: BaseWindow | undefined,
         event: KeyboardEvent
       ) => {
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
         quickStart.showQuickStart();
       },
     },
     {
-      label: "Send Feedback / Bug Reports",
+      // MUC: problems are reported to internal IT Support, not upstream
+      label: "Report an Issue to IT Support (my.mucsystem.net)",
       click: (
         item: MenuItem,
-        focusedWindow: BrowserWindow | undefined,
+        focusedWindowBase: BaseWindow | undefined,
         event: KeyboardEvent
       ) => {
-        electron.shell.openExternal("mailto:tad-feedback@tadviewer.com");
+        const focusedWindow = asBrowserWindow(focusedWindowBase);
+        electron.shell.openExternal("https://my.mucsystem.net");
       },
     },
   ];
@@ -184,8 +195,6 @@ export const createMenu = () => {
       // ignored on Mac OS; comes from plist
       submenu: [
         aboutTadMenuItem(),
-        separatorMenuItem,
-        checkForUpdateMenuItem(),
         separatorMenuItem,
         {
           role: "quit",
