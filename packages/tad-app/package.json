@@ -18,7 +18,7 @@
     "build-assets": "npm run build:dir && npm run build:html && npm run build:icon && npm run build:preload",
     "build-dev": "npm run build-assets && webpack --mode development",
     "build-prod": "npm run build-assets && webpack --env prod --mode production",
-    "build": "npm run build-prod && npm run electron-builder-postinstall",
+    "build": "npm run build-prod",
     "watch": "webpack --mode development --watch",
     "watch-prod": "webpack --env prod --mode production --watch",
     "pack": "electron-builder --dir",
@@ -170,6 +170,7 @@
       ]
     },
     "nodeGypRebuild": false,
+    "npmRebuild": false,
     "nsis": {
       "oneClick": false
     },
