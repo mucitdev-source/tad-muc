@@ -12,7 +12,7 @@ Ringkasan perubahan keamanan (rincian, bukti pengujian, dan risiko yang tersisa 
 - Query ke DuckDB divalidasi sehingga workspace `.tad` atau nama berkas tidak dapat menyisipkan perintah SQL; berkas `.duckdb` dibuka read-only.
 - Tidak ada koneksi jaringan keluar: ekstensi DuckDB `httpfs`, auto-updater, provider BigQuery, dukungan S3, dan unduhan kamus spell checker dinonaktifkan.
 - Electron diperbarui ke 45.4.1 dengan Electron Fuses (executable tidak dapat dipakai sebagai interpreter Node.js).
-- Pelaporan masalah diarahkan ke IT Support melalui portal `my.mucsystem.net`.
+- Pelaporan masalah diarahkan ke IT Support melalui `https://it-support.mucsystem.net/`.
 
 ## Mengunduh Installer
 

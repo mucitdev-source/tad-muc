@@ -151,14 +151,14 @@ export const createMenu = () => {
     },
     {
       // MUC: problems are reported to internal IT Support, not upstream
-      label: "Report an Issue to IT Support (my.mucsystem.net)",
+      label: "Report an Issue to IT Support (it-support.mucsystem.net)",
       click: (
         item: MenuItem,
         focusedWindowBase: BaseWindow | undefined,
         event: KeyboardEvent
       ) => {
         const focusedWindow = asBrowserWindow(focusedWindowBase);
-        electron.shell.openExternal("https://my.mucsystem.net");
+        electron.shell.openExternal("https://it-support.mucsystem.net/");
       },
     },
   ];

@@ -4,7 +4,7 @@
 |---|---|
 | Branch | `muc-hardening` |
 | Basis upstream | `antonycourtney/tad` commit `272ffa0` (5 Maret 2025, versi 0.14.0) |
-| Versi build MUC | `0.14.0-muc.1` (installer `Tad-MUC-Setup-0.14.0-muc.1.exe`) |
+| Versi build MUC | `0.14.0-muc.2` (installer `Tad-MUC-Setup-0.14.0-muc.2.exe`) |
 | Repositori | `https://github.com/mucitdev-source/tad-muc` |
 | Tanggal | 24 November 2026 |
 | Penyusun | IT Support – Penyusun dan Koordinator Kebijakan Keamanan Informasi |
@@ -57,7 +57,7 @@ Dokumen ini mencatat seluruh perubahan keamanan pada fork internal Tad sebelum a
 |---|---|---|
 | H13 | Upgrade Electron 31.0.1 → **45.4.1** (rilis 19 November 2026); penyesuaian API menu (`BaseWindow`) | `packages/tad-app/package.json`, `app/appMenu.ts` |
 | H14 | `electron-updater` dan menu *Check for Updates* dihapus; pembaruan hanya didistribusikan oleh IT | `app/appMenu.ts`, `app/updater.ts` (dihapus) |
-| H15 | Menu *Help* mengarahkan pelaporan masalah ke portal `my.mucsystem.net` | `app/appMenu.ts` |
+| H15 | Menu *Help* mengarahkan pelaporan masalah ke `https://it-support.mucsystem.net/` | `app/appMenu.ts` |
 | H16 | Inisialisasi S3 dinonaktifkan: kredensial AWS dari environment tidak lagi disalin ke DuckDB, dan aplikasi tidak gagal start bila variabel `AWS_*` ada | `packages/reltab-duckdb/src/s3utils.ts` |
 
 ### Tahap 4 – Isolasi proses renderer (commit `a495afc`)
@@ -79,7 +79,7 @@ Dokumen ini mencatat seluruh perubahan keamanan pada fork internal Tad sebelum a
 | H24 | Spell checker dimatikan sehingga tidak ada unduhan kamus. Hasil: **nol koneksi keluar** | `app/main.ts`, `app/appWindow.ts`, `app/quickStart.ts` |
 | H25 | `"publish": null` (tidak ada `app-update.yml` yang mengarah ke GitHub upstream); output packaging ke `release/` | `package.json` |
 | H26 | Binary DuckDB N-API bawaan dipaketkan tanpa rebuild (`"npmRebuild": false`), sehingga build di Windows tidak membutuhkan compiler C++ | `package.json` |
-| H27 | Identitas build dipisahkan dari rilis resmi: versi `0.14.0-muc.1`, `appId` `net.mucsystem.tad`, publisher "PT Multi Utama Consultindo - IT Support" (penulis asli dicantumkan sebagai kontributor), nama installer `Tad-MUC-Setup-<versi>.exe`, homepage ke repositori MUC; pipeline CI upstream (`azure-pipelines.yml`) dihapus | `packages/tad-app/package.json`, `README.md` |
+| H27 | Identitas build dipisahkan dari rilis resmi: versi `0.14.0-muc.x`, `appId` `net.mucsystem.tad`, publisher "PT Multi Utama Consultindo - IT Support" (penulis asli dicantumkan sebagai kontributor), nama installer `Tad-MUC-Setup-<versi>.exe`, homepage ke repositori MUC; pipeline CI upstream (`azure-pipelines.yml`) dihapus | `packages/tad-app/package.json`, `README.md` |
 
 ## 3. Bukti Pengujian
 
