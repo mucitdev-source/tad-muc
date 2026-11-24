@@ -13,7 +13,7 @@
     "build:dir": "mkdirp dist",
     "build:tadviewer-assets": "recursive-copy -w node_modules/tadviewer/dist/public dist/public",
     "build:html": "recursive-copy -w html dist",
-    "build:preload": "recursive-copy -w app/preload.js dist/preload.js",
+    "build:preload": "recursive-copy -w app/preload.js dist/preload.js && recursive-copy -w app/quickstartPreload.js dist/quickstartPreload.js",
     "build:icon": "mkdirp buildRes && recursive-copy -w res/AppIcon.icns buildRes/icon.icns && recursive-copy -w res/blue_external_drive.icns buildRes/dmgIcon.icns",
     "build-assets": "npm run build:dir && npm run build:html && npm run build:icon && npm run build:preload",
     "build-dev": "npm run build-assets && webpack --mode development",

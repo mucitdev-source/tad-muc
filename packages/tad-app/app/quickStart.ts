@@ -6,6 +6,7 @@ import log from "electron-log";
 
 import electron, { BrowserWindow, ipcMain } from "electron";
 import * as appWindow from "./appWindow";
+import { assertTrustedSender } from "./ipcSecurity";
 
 const app = electron.app;
 let win: BrowserWindow | null = null;
@@ -35,16 +36,33 @@ function openExample() {
   appWindow.createFromFile(exampleFilePath);
 }
 
+let handlersRegistered = false;
+const registerQuickStartHandlers = () => {
+  // register once: re-registering an ipcMain.handle channel throws
+  if (handlersRegistered) return;
+  handlersRegistered = true;
+  ipcMain.handle("getSetupInfo", (event) => {
+    assertTrustedSender(event, "getSetupInfo");
+    return getSetupInfo();
+  });
+  ipcMain.handle("openExample", (event) => {
+    assertTrustedSender(event, "openExample");
+    return openExample();
+  });
+};
+
 export const showQuickStart = () => {
   if (!win) {
-    ipcMain.handle("getSetupInfo", getSetupInfo);
-    ipcMain.handle("openExample", openExample);
+    registerQuickStartHandlers();
     win = new BrowserWindow({
       width: 850,
       height: 600,
       webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
+        // MUC hardening: same isolation as the main window
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        preload: path.join(__dirname, "quickstartPreload.js"),
       },
     });
     win.loadURL(

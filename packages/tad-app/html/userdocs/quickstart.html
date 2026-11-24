@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <title>Tad Quick Start</title>
+    <!-- MUC hardening: no inline scripts or event handlers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -25,18 +27,17 @@
         <br><br>
         <dl class="row">
         <dt class="col-sm-2"><code>.csv</code></dt>
-        <dd class="col-sm-10">The ubiquitous <a href="https://en.wikipedia.org/wiki/Comma-separated_values" onclick='tadOpenExternal(event,"https://en.wikipedia.org/wiki/Comma-separated_values")'>Comma Separated Values</a> file format</li></dd>
+        <dd class="col-sm-10">The ubiquitous <a href="https://en.wikipedia.org/wiki/Comma-separated_values">Comma Separated Values</a> file format</li></dd>
         <dt class="col-sm-2"><code>.parquet</code></dt>
-        <dd class="col-sm-10"><a href="https://parquet.apache.org/" onclick='tadOpenExternal(event,"https://parquet.apache.org/")'>Apache Parquet</a>, an efficient binary columnar storage format for tabular data, especially useful for large datasets</dd>
+        <dd class="col-sm-10"><a href="https://parquet.apache.org/">Apache Parquet</a>, an efficient binary columnar storage format for tabular data, especially useful for large datasets</dd>
         <dt class="col-sm-2"><code>.duckdb</code></dt>
-        <dd class="col-sm-10"><a href="https://duckdb.org/" onclick='tadOpenExternal(event,"https://duckdb.org/")'>DuckDb</a> database files</dd>
+        <dd class="col-sm-10"><a href="https://duckdb.org/">DuckDb</a> database files</dd>
         <dt class="col-sm-2"><code>.sqlite</code></dt>
-        <dd class="col-sm-10"><a href="https://www.sqlite.org/index.html" onclick='tadOpenExternal(event,"https://www.sqlite.org/index.html")''>SQLite</a> database files</dd>
+        <dd class="col-sm-10"><a href="https://www.sqlite.org/index.html">SQLite</a> database files</dd>
         </dl>
 
         <P>
-          The primary feature that Tad provides for exploring and analyzing files is a <a href="https://en.wikipedia.org/wiki/Pivot_table"
-          onclick='tadOpenExternal(event,"https://en.wikipedia.org/wiki/Pivot_table")'>pivot table</a>.
+          The primary feature that Tad provides for exploring and analyzing files is a <a href="https://en.wikipedia.org/wiki/Pivot_table">pivot table</a>.
           A Tad pivot table transforms a flat table of data into a hierarchical <i>tree table</i> by
           grouping together rows that have the same value for some selected columns (the pivot columns),
           and calculating aggregate values (like sum, min or max) for the other columns in each group.
@@ -63,12 +64,10 @@ $ tad somefile.csv
         </ol>
         <h3>Basic Usage</h3>
         <p>
-        You can explore the basics of Tad by opening this example CSV file (from the <a href="https://www.kaggle.com/carolzhangdc/imdb-5000-movie-dataset"
-          onclick='tadOpenExternal(event,"https://www.kaggle.com/carolzhangdc/imdb-5000-movie-dataset")'>IMDB 5000 Movie Dataset</a> on Kaggle)
+        You can explore the basics of Tad by opening this example CSV file (from the <a href="https://www.kaggle.com/carolzhangdc/imdb-5000-movie-dataset">IMDB 5000 Movie Dataset</a> on Kaggle)
         included in the Tad distribution:
         <p>
-        <button class="btn btn-primary btn-lg"
-          onclick='tadOpenExample()'>
+        <button class="btn btn-primary btn-lg" data-tad-action="open-example">
         Open movie_metadata.csv
         </button>
         <p>
@@ -161,12 +160,11 @@ $ tad somefile.csv
         <h3>Data Sources</h3>
         <p>
         If you work in data science, chances are you have no shortage of CSV files of your own to explore.
-        In addition to the <a href='#' onclick='tadOpenExample()'>movie_metadata.csv</a> sample file included with Tad, a few of my favorite data sources on the Internet are:
+        In addition to the <a href="#" data-tad-action="open-example">movie_metadata.csv</a> sample file included with Tad, a few of my favorite data sources on the Internet are:
         <ul>
-          <li><a href="https://www.kaggle.com/datasets" onclick='tadOpenExternal(event,"https://www.kaggle.com/datasets")'>Kaggle Datasets</a>. The <code>movie_metadata.csv</code> file used for many Tad examples is from the <a href="https://www.kaggle.com/deepmatrix/imdb-5000-movie-dataset"
-            onclick='tadOpenExternal(event,"https://www.kaggle.com/deepmatrix/imdb-5000-movie-dataset")'>IMDB 5000 Movie Dataset</a> on Kaggle.
-          <li><a href="https://github.com/metmuseum/openaccess" onclick='tadOpenExternal(event,"https://github.com/metmuseum/openaccess")'>Met Museum Open Access Initiative</a>. The Metropolitan Museum of Art recently made 420,000 artworks available online for unrestricted use. The catalog file <code>MetObjects.csv</code> available at the linked github repository is a good example for testing Tad's ability to handle larger CSV files. It's a 228MB CSV file with 420,000 rows of data. It takes about 13 sec to load and display this file in Tad on my late 2013 MacBook Pro.
-          <li>The <a href="https://github.com/fivethirtyeight/data" onclick='tadOpenExternal(event,"https://github.com/fivethirtyeight/data")'>FiveThirtyEight github repository</a> has many CSV files providing data behind the stories and interactives on the FiveThirtyEight web site.
+          <li><a href="https://www.kaggle.com/datasets">Kaggle Datasets</a>. The <code>movie_metadata.csv</code> file used for many Tad examples is from the <a href="https://www.kaggle.com/deepmatrix/imdb-5000-movie-dataset">IMDB 5000 Movie Dataset</a> on Kaggle.
+          <li><a href="https://github.com/metmuseum/openaccess">Met Museum Open Access Initiative</a>. The Metropolitan Museum of Art recently made 420,000 artworks available online for unrestricted use. The catalog file <code>MetObjects.csv</code> available at the linked github repository is a good example for testing Tad's ability to handle larger CSV files. It's a 228MB CSV file with 420,000 rows of data. It takes about 13 sec to load and display this file in Tad on my late 2013 MacBook Pro.
+          <li>The <a href="https://github.com/fivethirtyeight/data">FiveThirtyEight github repository</a> has many CSV files providing data behind the stories and interactives on the FiveThirtyEight web site.
         </ul>
 -->
         <h3>Going Further (Developers and Data Hackers)</h3>
@@ -179,81 +177,11 @@ $ tad -f --show-queries somefile.csv
         <P>
         <h3>And Finally...</h3>
         <P>
-        Have fun! I hope you find Tad a useful utility for viewing and analyzing data. <a href="mailto:tad-feedback@tadviewer.com" onclick='tadOpenExternal(event,"mailto:tad-feedback@tadviewer.com")'>  Feedback welcome</a>.
+        Have fun! I hope you find Tad a useful utility for viewing and analyzing data. Problems with this MUC build should be reported to IT Support via <a href="https://my.mucsystem.net">my.mucsystem.net</a>.
         <P>
       </div>
     </main>
 <script src="js/clipboard.min.js"></script>
-<script>
-  function titledPanel(title,content) {
-    return `
-<div class="panel panel-default">
-  <div class="panel-heading">
-    <h4 class="panel-title">${title}</h4>
-  </div>
-  <div class="panel-body">
-  ${content}
-  </div>
-</div>`
-  }
-  function unixSetup(installCmd) {
-    const title = 'macOS'
-    const content=`
-    <P>To launch tad from the command line, you need to ensure the Tad launcher shell script is on your <code>PATH</code>. If you have administrative rights on your machine, run the following command to create a symbolic link to <code>tad.sh</code> in <code>/usr/local/bin</code>:
-  <br>
-  <br>
-  <div class="input-group">
-     <input type="text" id="install-cmd" class="form-control code" value="${installCmd}"></input>
-     <span class="input-group-btn">
-       <button class="btn btn-default" type="button" data-clipboard-target="#install-cmd">
-        <span class="glyphicon glyphicon-copy" aria-hidden="true"></span>Copy
-       </button>
-     </span>
-  </div><!-- /input-group -->
-`
-    return titledPanel(title, content)
-  }
-  function winSetup(appDir) {
-    const title='Windows'
-    const content=`
-On Windows, you should use the Control Panel to add <code>${appDir}</code> to your <code>PATH</code> environment variable.
-`
-    return titledPanel(title, content)
-  }
-  async function init() {
-    new Clipboard('.btn')
-    const electron = require('electron')
-    const setupInfo = await electron.ipcRenderer.invoke('getSetupInfo');
-    console.log('setup info: ', setupInfo)
-    const {platform, appDir, appScriptPath, exeDir} = setupInfo
-    let installCmdHtml
-    if (platform === 'win32') {
-      installCmdHtml = winSetup(exeDir)
-    } else if (platform === 'darwin') {
-      const installCmd = `sudo ln -s ${appScriptPath} /usr/local/bin/tad`
-      installCmdHtml = unixSetup(installCmd)
-    }
-
-    if (installCmdHtml) {
-      const elem = document.getElementById('cmdLineSetup')
-      elem.innerHTML = installCmdHtml
-    }
-    
-    // install this globally so we can access in generated a tag:
-    window.tadOpenExternal = function (event,url) {
-      event.preventDefault()
-      console.log('tadOpenExternal: ', url)
-      electron.shell.openExternal(url)
-      return false
-    }
-
-    window.tadOpenExample = function () {
-      event.preventDefault()
-      electron.ipcRenderer.invoke('openExample');
-    }
-  }
-  window.onload = init
-
-</script>
+<script src="js/quickstart.js"></script>
 </body>
 </html>

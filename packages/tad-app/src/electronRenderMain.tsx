@@ -1,7 +1,8 @@
 /*
  * main module for render process
  */
-import "source-map-support/register";
+// MUC hardening: source-map-support (Node-only) removed; the renderer is
+// sandboxed. DevTools uses the bundled source maps directly.
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import OneRef, { mkRef, refContainer, mutableGet, StateRef } from "oneref";
@@ -18,20 +19,19 @@ import { initAppState } from "tadviewer";
 import * as reltab from "reltab";
 import log from "loglevel";
 import { ElectronTransportClient } from "./electronClient";
-import * as electron from "electron";
-import { clipboard, ipcRenderer, shell } from "electron";
+import { tadApi } from "./tadApi";
 import { DataSourcePath, DataSourceId, RemoteReltabConnection } from "reltab";
 import { OpenParams } from "./openParams";
 import "./app.css";
 
-const initMainProcess = () => ipcRenderer.invoke("initMain");
+const initMainProcess = () => tadApi.invoke("initMain");
 const remoteErrorDialog = (title: string, msg: string, fatal = false) => {
-  return ipcRenderer.invoke("errorDialog", title, msg, fatal);
+  return tadApi.invoke("errorDialog", title, msg, fatal);
 };
 const newWindowFromDSPath = (
   dsPath: DataSourcePath,
   stateRef: StateRef<AppState>
-) => ipcRenderer.invoke("newWindowFromDSPath", dsPath);
+) => tadApi.invoke("newWindowFromDSPath", dsPath);
 
 type InitInfo = {
   connKey: DataSourceId;
@@ -137,7 +137,13 @@ const init = async () => {
         log.warn("openURL: blocked URL with disallowed scheme: ", protocol);
         return;
       }
-      shell.openExternal(url);
+      // the main process validates the URL again before opening it
+      tadApi.openExternal(url);
+    };
+
+    // MUC hardening: clipboard writes go through the main process
+    const clipboard = {
+      writeText: (text: string) => tadApi.writeClipboardText(text),
     };
 
     const root = ReactDOM.createRoot(document.getElementById("app")!);
@@ -149,14 +155,14 @@ const init = async () => {
         openURL={openURL}
         embedded={false}
         onBrowseExportPath={(exportFormat: ExportFormat) =>
-          ipcRenderer.send("browse-export-path", { exportFormat })
+          tadApi.send("browse-export-path", { exportFormat })
         }
         onExportFile={(
           exportFormat: ExportFormat,
           exportPath: string,
           parquetExportOptions: ParquetExportOptions
         ) =>
-          ipcRenderer.send("export-file", {
+          tadApi.send("export-file", {
             exportFormat,
             exportPath,
             parquetExportOptions,
@@ -171,7 +177,7 @@ const init = async () => {
     const openParams = (window as any).openParams as OpenParams | undefined;
     await openFromOpenParams(openParams, stateRef);
 
-    ipcRenderer.on("request-serialize-app-state", (event, req) => {
+    tadApi.on("request-serialize-app-state", (req) => {
       const { requestId } = req;
       const curState = mutableGet(stateRef);
       const viewState = curState.viewState;
@@ -181,15 +187,15 @@ const init = async () => {
         dsPath,
         viewParams: viewParamsJS,
       };
-      ipcRenderer.send("response-serialize-app-state", {
+      tadApi.send("response-serialize-app-state", {
         requestId,
         contents: serState,
       });
     });
-    ipcRenderer.on("set-show-hidden-cols", (event, val) => {
+    tadApi.on("set-show-hidden-cols", (val) => {
       actions.setShowHiddenCols(val, stateRef);
     });
-    ipcRenderer.on("request-serialize-filter-query", (event, req) => {
+    tadApi.on("request-serialize-filter-query", (req) => {
       // console.log("got request-serialize-filter-query: ", req);
       const { requestId } = req;
       const curState = mutableGet(stateRef);
@@ -201,16 +207,16 @@ const init = async () => {
         filterRowCount,
       };
       const contents = JSON.stringify(queryObj, null, 2);
-      ipcRenderer.send("response-serialize-filter-query", {
+      tadApi.send("response-serialize-filter-query", {
         requestId,
         contents,
       });
     });
-    ipcRenderer.on("open-export-begin-dialog", (event, req) => {
+    tadApi.on("open-export-begin-dialog", (req) => {
       const { openState, saveFilename } = req;
       actions.setExportBeginDialogOpen(openState, stateRef);
     });
-    ipcRenderer.on("open-export-progress-dialog", (event, req) => {
+    tadApi.on("open-export-progress-dialog", (req) => {
       const { openState, exportPathBaseName } = req;
       actions.setExportProgressDialogOpen(
         openState,
@@ -218,25 +224,25 @@ const init = async () => {
         stateRef
       );
     });
-    ipcRenderer.on("close-export-progress-dialog", (event, req) => {
+    tadApi.on("close-export-progress-dialog", (req) => {
       actions.setExportProgressDialogOpen(false, "", stateRef);
     });
-    ipcRenderer.on("set-export-path", (event, req) => {
+    tadApi.on("set-export-path", (req) => {
       const { exportPath } = req;
       actions.setExportPath(exportPath, stateRef);
     });
-    ipcRenderer.on("export-progress", (event, req) => {
+    tadApi.on("export-progress", (req) => {
       const { percentComplete } = req;
       actions.setExportProgress(percentComplete, stateRef);
     });
-    ipcRenderer.on("open-file", (event, req) => {
+    tadApi.on("open-file", (req) => {
       const { openParams } = req;
       openFromOpenParams(openParams, stateRef);
     });
 
     document.addEventListener("copy", function (e) {});
 
-    ipcRenderer.send("render-init-complete");
+    tadApi.send("render-init-complete");
   } catch (e) {
     const err = e as any;
     console.error(

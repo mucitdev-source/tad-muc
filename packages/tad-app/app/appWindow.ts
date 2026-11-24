@@ -10,6 +10,7 @@ const ipcMain = electron.ipcMain;
 import fs from "fs";
 import log from "electron-log";
 import * as fileExport from "./fileExport";
+import { checkTrustedSender } from "./ipcSecurity";
 import * as reltab from "reltab";
 import {
   DataSourceId,
@@ -67,6 +68,7 @@ export function runPostInit(win: BrowserWindow, fn: () => void) {
 }
 
 ipcMain.on("render-init-complete", (event: IpcMainEvent) => {
+  if (!checkTrustedSender(event, "render-init-complete")) return;
   markInitialized(event.sender.id);
 });
 
@@ -104,8 +106,12 @@ const create = async (openParams: OpenParams): Promise<BrowserWindow> => {
     x: 0,
     y: 0,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      // MUC hardening: no Node.js in the page; sandboxed renderer with an
+      // isolated, allow-listed preload bridge (app/preload.js)
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
       preload: path.join(__dirname, "preload.js"),
       additionalArguments: [`--tadOpenParams=${JSON.stringify(openParams)}`],
     },
@@ -275,7 +281,12 @@ let stateRequestId = 100;
 let pendingStateRequests: { [key: number]: any } = {}; // handle a response from renderer process by looking up Promise resolver:
 
 const handleResponse = (event: IpcMainEvent, response: any) => {
-  const resolve = pendingStateRequests[response.requestId];
+  if (!checkTrustedSender(event, "serialize-response")) return;
+  const resolve = pendingStateRequests[response?.requestId];
+  if (typeof resolve !== "function") {
+    log.warn("handleResponse: ignoring response for unknown request");
+    return;
+  }
   resolve(response.contents); // and clear out entry:
 
   delete pendingStateRequests[response.requestId];
@@ -353,6 +364,7 @@ const browseExportPath = async (
   event: IpcMainEvent,
   browseInfo: any
 ): Promise<void> => {
+  if (!checkTrustedSender(event, "browse-export-path")) return;
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) {
     return;
@@ -430,6 +442,7 @@ const checkExportRequest = (
 ipcMain.on("browse-export-path", browseExportPath);
 
 ipcMain.on("export-file", async (event: IpcMainEvent, exportFileReq: any) => {
+  if (!checkTrustedSender(event, "export-file")) return;
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) {
     return;

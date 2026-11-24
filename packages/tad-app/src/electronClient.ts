@@ -1,12 +1,10 @@
-import log from "loglevel";
-import * as reltab from "reltab";
-import * as electron from "electron";
-import { ipcRenderer } from "electron";
 import { TransportClient } from "reltab";
+import { tadApi } from "./tadApi";
 
 // TODO: Exception handling!
 export class ElectronTransportClient implements TransportClient {
   invoke(functionName: string, req: any): Promise<any> {
-    return ipcRenderer.invoke(functionName, req);
+    // MUC hardening: goes through the allow-listed preload bridge
+    return tadApi.invoke(functionName, req);
   }
 }

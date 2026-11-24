@@ -109,10 +109,23 @@ function production() {
   return prod;
 }
 
+// MUC hardening: the renderer is sandboxed with contextIsolation and no
+// Node.js integration, so it is built as a plain web bundle. Any attempt to
+// pull Node built-ins into renderer code fails the build instead of failing
+// (or silently gaining Node access) at runtime.
 var render = {
-  target: "electron-renderer",
+  target: "web",
   entry: {
     tadapp: "./src/electronRenderMain.tsx",
+  },
+  resolve: {
+    extensions: [".webpack.js", ".web.js", ".js", ".ts", ".tsx"],
+    fallback: {
+      fs: false,
+      path: false,
+      util: false,
+      events: false,
+    },
   },
 };
 

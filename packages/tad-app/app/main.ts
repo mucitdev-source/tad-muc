@@ -17,6 +17,7 @@ import * as setup from "./setup";
 import * as quickStart from "./quickStart";
 import * as appMenu from "./appMenu";
 import * as appWindow from "./appWindow";
+import { assertTrustedSender, registerSecureIpcHandlers } from "./ipcSecurity";
 import electron, { BrowserWindow, contextBridge, ipcMain } from "electron";
 import fs from "fs";
 
@@ -53,7 +54,11 @@ class ElectronTransportServer implements TransportServer {
     handler: (req: any) => Promise<any>
   ): void {
     // TODO: catch exceptions and map into a serializable failure
-    ipcMain.handle(functionName, async (event, req) => handler(req));
+    // MUC hardening: only Tad's own pages may call the data source API
+    ipcMain.handle(functionName, async (event, req) => {
+      assertTrustedSender(event, functionName);
+      return handler(req);
+    });
   }
 }
 
@@ -129,13 +134,19 @@ const remotableNewWindowFromDSPath = (
 
 const appInit = (options: any) => {
   // log.log('appInit: ', options)
-  ipcMain.handle("initMain", async (event) => initMainAsync(options));
-  ipcMain.handle("errorDialog", (event, title, msg, fatal) =>
-    errorDialog(title, msg, fatal)
-  );
-  ipcMain.handle("newWindowFromDSPath", (event, dsPath) =>
-    newWindowFromDSPath(dsPath)
-  );
+  ipcMain.handle("initMain", async (event) => {
+    assertTrustedSender(event, "initMain");
+    return initMainAsync(options);
+  });
+  ipcMain.handle("errorDialog", (event, title, msg, fatal) => {
+    assertTrustedSender(event, "errorDialog");
+    return errorDialog(String(title), String(msg), fatal === true);
+  });
+  ipcMain.handle("newWindowFromDSPath", (event, dsPath) => {
+    assertTrustedSender(event, "newWindowFromDSPath");
+    return newWindowFromDSPath(dsPath);
+  });
+  registerSecureIpcHandlers();
   appMenu.createMenu(); // log.log('appInit: done')
 };
 
